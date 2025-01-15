@@ -1,0 +1,7 @@
+[package]
+name = "ibm_5150_emu"
+version = "0.0.1"
+edition = "2021"
+authors = ["vmx"]
+
+[dependencies]

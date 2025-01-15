@@ -50,9 +50,14 @@ pub struct I8088 {
     flags:u16,
 }
 
+impl Default for I8088 {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl I8088 {
     pub fn new() -> Self {
-
         Self {
             prefetch_queue:StaticQueue::<u8, 0x04>::new(),
             pc:0x00, /* program counter / instruction pointer */

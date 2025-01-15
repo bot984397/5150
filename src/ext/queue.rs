@@ -59,6 +59,12 @@ impl <T:Debug, const N:usize> Debug for StaticQueue<T, N> {
     }
 }
 
+impl<T, const N:usize> Default for StaticQueue<T, N> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T, const N:usize> StaticQueue<T, N> {
     pub fn new() -> Self {
         assert!(N > 0, "Queue length must not be 0.");
@@ -220,6 +226,12 @@ impl<'a, T, const N:usize> Iterator for IterMut<'a, T, N> {
 pub struct DynamicQueue<T, const N:usize> {
     data:VecDeque<T>,
     min_size:usize,
+}
+
+impl<T, const N:usize> Default for DynamicQueue<T, N> {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl<T, const N:usize> DynamicQueue<T, N> {

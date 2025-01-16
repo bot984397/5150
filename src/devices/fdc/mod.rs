@@ -75,15 +75,15 @@ pub enum Command {
     WriteDeletedData,
     ReadTrack,
     ReadId,
-    FormatTrack             = 0b0000_1101,
-    ScanEqual               = 0b0001_0001,
-    ScanLowOrEqual          = 0b0001_1001,
-    ScanHighOrEqual         = 0b0001_1101,
-    Recalibrate             = 0b0000_0111,
-    SenseInterruptStatus    = 0b0000_1000,
-    Specify                 = 0b0000_0011,
-    SenseDriveStatus        = 0b0000_0100,
-    Seek                    = 0b0000_1111,
+    FormatTrack,
+    ScanEqual,
+    ScanLowOrEqual,
+    ScanHighOrEqual,
+    Recalibrate,
+    SenseInterruptStatus,
+    Specify,
+    SenseDriveStatus,
+    Seek,
     Invalid,
 }
 
@@ -103,11 +103,28 @@ pub const COMMAND_SPECIFY:u8                = 0b0000_0011;
 pub const COMMAND_SENSE_DRIVE_STATUS:u8     = 0b0000_0100;
 pub const COMMAND_SEEK:u8                   = 0b0000_1111;
 
+pub struct FdcCommand {
+    type:Command,
+    fn:Option<FdcDispatch>,
+    param:u8,
+}
+
+impl FdcCommand {
+    pub fn new() -> Self {
+        Self {
+            type:Command::Invalid,
+            fn:None,
+            param:0,
+        }
+    }
+}
+
 pub struct UPD765 {
     status_register:u8,
     data_register:u8,
 
     phase:OperationPhase,
+    command:FdcCommand,
 }
 
 impl PortMappedDevice for UPD765 {
@@ -130,19 +147,16 @@ impl Default for UPD765 {
     }
 }
 
-type FdcDispatch = fn(&mut UPD765) -> u8;
-
-struct FdcCommand {
-    type:Command,
-    func:FdcDispatch,
-}
+type FdcDispatch = fn(&mut UPD765);
 
 impl UPD765 {
     pub fn new() -> Self {
         Self {
             status_register:0,
             data_register:0,
+
             phase:OperationPhase::None,
+            command:FdcCommand::new(),
         }
     }
 
@@ -155,16 +169,116 @@ impl UPD765 {
         }
     }
 
-    fn set_active_command(&mut self
+    fn set_active_command(&mut self, cmd:Command, param:u8, fn:FdcDispatch) {
+        self.command.cmd = Command;
+        self.command.param = param;
+        self.command.fn = Some(fn);
+        self.phase = OperationPhase::Command;
+    }
 
     pub fn dispatch_data_register_write(&mut self, val:u8) {
         if self.phase == OperationPhase::Command {
+            // fetch single parameter
+            self.command.param -= 1;
+            if self.command.param == 0 { 
+                self.phase = OperationPhase::Execution;
+            }
             // take in additional parameters
+            return;
+        }
+        if self.phase == OperationPhase::Execution {
+            self.command.fn();
+            self.phase = OperationPhase::Result;
+            return;
         }
         match val & FDC_COMMAND_MASK {
             COMMAND_READ_DATA => {
-                self.set_active_command(Command::ReadData)
+                self.set_active_command(Command::ReadData, 
+                                        8,
+                                        UDP765::fdc_read_data);
+            },
+            COMMAND_READ_DELETED_DATA => {
+                self.set_active_command(Command::ReadDeletedData, 
+                                        8, 
+                                        UDP765::fdc_read_deleted_data);
+            },
+            COMMAND_WRITE_DATA => {
+                self.set_active_command(Command::WriteData,
+                                        8,
+                                        UDP765::fdc_write_data);
+            },
+            COMMAND_WRITE_DELETED_DATA => {
+                self.set_active_command(Command::WriteDeletedData,
+                                        8,
+                                        UDP765::fdc_write_deleted_data);
+            },
+            COMMAND_READ_TRACK => {
+                self.set_active_command(Command::ReadTrack,
+                                        8,
+                                        UDP765::fdc_read_track);
+            },
+            COMMAND_READ_ID => {
+                self.set_active_command(Command::ReadId,
+                                        1,
+                                        UDP765::fdc_read_id);
+            },
+            COMMAND_FORMAT_TRACK => {
+                self.set_active_command(Command::FormatTrack,
+                                        5,
+                                        UDP765::fdc_format_track);
+            },
+            COMMAND_SCAN_EQUAL => {
+                self.set_active_command(Command::ScanEqual,
+                                        8,
+                                        UDP765::fdc_scan_equal);
+            },
+            COMMAND_SCAN_LOW_OR_EQUAL => {
+                self.set_active_command(Command::ScanLowOrEqual,
+                                        8,
+                                        UDP765::fdc_scan_low_or_equal);
+            },
+            COMMAND_SCAN_HIGH_OR_EQUAL => {
+                self.set_active_command(Command::ScanHighOrEqual,
+                                        8,
+                                        UDP765::fdc_scan_high_or_equal);
+            },
+            COMMAND_RECALIBRATE => {
+                self.set_active_command(Command::Recalibrate,
+                                        1,
+                                        UDP765::fdc_recalibrate);
+            },
+            COMMAND_SENSE_INTERRUPT_STATUS => {
+                self.set_active_command(Command::SenseInterruptStatus,
+                                        0,
+                                        UDP765::fdc_sense_interrupt_status);
+            },
+            COMMAND_SPECIFY => {
+                self.set_active_command(Command::Specify,
+                                        2,
+                                        UDP765::fdc_specify);
+            },
+            COMMAND_SENSE_DRIVE_STATUS => {
+                self.set_active_command(Command::SenseDriveStatus,
+                                        1,
+                                        UDP765::fdc_sense_drive_status);
+            },
+            COMMAND_SEEK => {
+                self.set_active_command(Command::Seek,
+                                        1,
+                                        UDP765::fdc_seek);
+            },
+            _ => {
+                println!("[FDC] INVALID COMMAND");
             }
         }
     }
+}
+
+/// Dispatch functions - called by central command dispatcher
+impl UPD765 {
+    pub fn fdc_read_data(&mut self) {
+
+    }
+
+    pub fn fdc_
 }

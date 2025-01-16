@@ -1,8 +1,12 @@
 pub mod addr;
+pub mod cycle;
 
 use std::fmt::{self, Debug};
-use crate::ext::queue::StaticQueue;
-use crate::core::biu::BusInterface;
+use crate::{
+    ext::queue::StaticQueue, 
+    core::bus::BusInterface, 
+    cpu::cycle::TState
+};
 
 #[derive(Debug, Clone)]
 pub enum CpuStatus {
@@ -25,7 +29,7 @@ pub enum CpuError {
 // impl fmt::Display for CpuError {}
 
 pub struct I8088 {
-    /* due to the 8088 utilizing a prefetch queue, the PC will
+    /* due to the 8088 utilizing a 4-byte prefetch queue, the PC will
      * point to the next byte to be fetched, not executed. */
     prefetch_queue:StaticQueue<u8, 0x04>,
     pc:u16, /* program counter / instruction pointer */
@@ -81,9 +85,5 @@ impl I8088 {
 
             flags:0x00,
         }
-    }
-
-    pub fn cycle(&mut self) -> Result<(), CpuError> {
-        Ok(())
     }
 }

@@ -1,5 +1,6 @@
 use crate::cpu::I8088;
 
+#[derive(Debug, Copy, Clone)]
 pub enum Segment {
     CS,
     DS,
